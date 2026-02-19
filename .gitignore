@@ -39,3 +39,19 @@
 
 # debug information files
 *.dwo
+
+# IDE / editor
+.vscode/
+*.swp
+*.swo
+*.user
+*.sln
+*.vcxproj*
+
+# certain files
+compile_commands.json
+.clang-format
+
+# cache directories 
+.cache/
+
