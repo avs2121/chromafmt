@@ -25,42 +25,94 @@ struct Color
 template <>
 struct std::formatter<Color>
 {
-    bool isHex = false;
-    constexpr auto parse(std::format_parse_context& ctx)  // sets internal state
+    bool isHexUpper = false;
+    bool isHexLower = false;
+
+    constexpr auto parse(std::format_parse_context& ctx)  // parses spec format and stores state
     {
-        auto it = ctx.begin();
-        if (it == ctx.end())
-            return it;
+        auto it = ctx.begin();  // points to first character of spec e.g -> '*'
+        auto end = ctx.end();   // points 1 past the ctx buffer.
 
-        if (*it == 'h' || *it == 'H')
+        if (it == end)  // stop if empty (when spec is {}).
         {
-            isHex = true;
-            ++it;
+            return it;
         }
-        if (it != ctx.end() && *it != '}')
-            throw std::format_error("Invalid format args for QuotableString.");
 
-        return it;
+        auto type_it = it;
+        while (type_it != end && *type_it != '}')  // advance until '}' to find end.
+        {
+            ++type_it;
+        }
+
+        auto ranged_end = type_it;  // pointing to last '}'
+
+        if (ranged_end != it)
+        {
+            auto last = ranged_end - 1;  // pointing to last character before '}'
+            if (*last == 'h')
+            {
+                isHexLower = true;
+                ranged_end = last;
+            }
+            else if (*last == 'H')
+            {
+                isHexUpper = true;
+                ranged_end = last;
+            }
+        }
+
+        // the range [it, ranged_end] only contains spec parts now.
+        // Store the spec as a string, in a fixed-size char array.
+        spec_len = 0;
+        for (auto i = it; i != ranged_end; ++i)
+        {
+            spec_buf[spec_len++] = *i;
+        }
+
+        return type_it;  // returning iterator pointing to '}'
     }
 
-    auto format(Color c, std::format_context& ctx) const  // read the interal state
+    auto format(Color c, std::format_context& ctx) const  // read the interal state at runtime
     {
-        if (isHex)
+        std::string result;
+        if (isHexUpper || isHexLower)
         {
-            uint32_t val = (c.r << 16 | c.g << 8 | c.b);
-            return std::format_to(ctx.out(), "#{:x}", val);
+            uint32_t val = (static_cast<uint32_t>(c.r) << 16) | (static_cast<uint32_t>(c.g) << 8) |
+                           static_cast<uint32_t>(c.b);
+
+            if (isHexUpper)
+                result = std::format("#{:06X}", val);  // 06 for width
+
+            else
+                result = std::format("#{:06x}", val);  // 06 for width
         }
         else
-            return std::format_to(ctx.out(), "({}, {}, {})", c.r, c.g, c.b);
+            result = std::format("({}, {}, {})", c.r, c.g, c.b);
+
+        // reconstruct the format string
+        std::string fmt = std::string{"{:" + std::string(spec_buf, spec_len) + "}"};
+
+        // takes the build string (fmt) wraps the result as the argument to format, and into the
+        // output iterator (ctx)
+        return std::vformat_to(ctx.out(), fmt, std::make_format_args(result));
     }
+
+   private:
+    size_t spec_len{0};
+    char spec_buf[32]{};
 };
 
 int main()
 {
-    Color c1(200, 200, 100);
-    std::cout << std::format("col {}\n", c1);
-    std::cout << std::format("col {:h}\n", c1);
-    std::cout << std::format("col {:H}\n", c1);
+    // clang-format off
+    Color c1(0, 0, 1);
+    std::cout << std::format("standard color rgb {}\n", c1);        // standard output
+    std::cout << std::format("lower case hex color {:h}\n", c1);    // lower case hex
+    std::cout << std::format("upper case hex color {:H}\n", c1);    // upper case hex
+    std::cout << std::format("specifier last color {:>20H}\n",c1);  // test of type specifier in last position
+    std::cout << std::format("fill width color: {:*^20}\n", c1);    // fill width 20 with *
+
+    // clang-format on
 }
 
 /*
