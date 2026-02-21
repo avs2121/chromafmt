@@ -1,8 +1,7 @@
+#include <cmath>
 #include <iostream>
 
-#include "color.hpp"
 #include "color_formatter.hpp"
-#include "duration.hpp"
 #include "duration_formatter.hpp"
 
 /*
@@ -28,6 +27,12 @@ int main()
     std::cout << std::format("specifier last color {:>20H}\n", c1);  // type specifier in last position
     std::cout << std::format("fill width color {:*^20}\n", c1);      // fill width 20 with *
 
-    Duration d(1523);
-    std::cout << std::format("Duration {}\n", d);
+    Duration d(4 * pow(10, 10));                      // 40.000.000.000 millarder ms
+    std::cout << std::format("Duration {}\n", d);     // standard output y,d,h,m,s,ms
+    std::cout << std::format("Duration {:ms}\n", d);  // ms
+    std::cout << std::format("Duration {:s}\n", d);   // sec
+    std::cout << std::format("Duration {:m}\n", d);   // minute
+    std::cout << std::format("Duration {:h}\n", d);   // hour
+    std::cout << std::format("Duration {:d}\n", d);   // day
+    std::cout << std::format("Duration {:y}\n", d);   // year
 }

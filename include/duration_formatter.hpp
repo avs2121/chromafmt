@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <format>
 
 #include "duration.hpp"
@@ -21,6 +22,26 @@ ms -> s -> m -> h -> d -> y
 template <>
 struct std::formatter<Duration>
 {
+   private:
+    static void append_unit(std::string& out, bool& started, uint64_t value, const char* suffix)
+    {
+        if (value != 0 || started)
+        {
+            if (strcmp(suffix, "ms") == 0)
+            {
+                out += std::format("{}{}", value, suffix);
+            }
+            else
+            {
+                out += std::format("{}{} ", value, suffix);
+                started = true;
+            }
+        }
+    }
+
+    char spec_buf[32]{};
+    size_t spec_len{0};
+
     bool isMs = false;    // [:ms]
     bool isSec = false;   // [:s]
     bool isMin = false;   // [:m]
@@ -28,6 +49,7 @@ struct std::formatter<Duration>
     bool isDay = false;   // [:d]
     bool isYear = false;  // [:y]
 
+   public:
     constexpr auto parse(std::format_parse_context& ctx)
     {
         auto it = ctx.begin();
@@ -88,37 +110,62 @@ struct std::formatter<Duration>
         return type_it;
     }
 
-    auto format(Duration d, std::format_context& ctx) const
+    auto format(const Duration& d, std::format_context& ctx) const
     {
         std::string result;
         if (isMs)
         {
+            result = std::format("{}ms", d.ms());
         }
         else if (isSec)
         {
+            result = std::format("{}s", d.s());
         }
         else if (isMin)
         {
+            result = std::format("{}m", d.m());
         }
         else if (isHour)
         {
+            result = std::format("{}h", d.h());
         }
         else if (isDay)
         {
+            result = std::format("{}d", d.d());
         }
         else if (isYear)
         {
+            result = std::format("{}y", d.y());
         }
         else
         {
-            result = std::format("{}y, {}d, {}h, {}m, {}s, {}ms", d.y(), d.d(), d.h(), d.m(), d.s(), d.ms());
+            auto val_ms = d.ms();
+            auto val_y = val_ms / MS_PER_YEAR;
+            val_ms %= MS_PER_YEAR;
+
+            auto val_d = val_ms / MS_PER_DAY;
+            val_ms %= MS_PER_DAY;
+
+            auto val_h = val_ms / MS_PER_HOUR;
+            val_ms %= MS_PER_HOUR;
+
+            auto val_m = val_ms / MS_PER_MINUTE;
+            val_ms %= MS_PER_MINUTE;
+
+            auto val_s = val_ms / MS_PER_SECOND;
+            val_ms %= MS_PER_SECOND;
+
+            // suppress leading zero units.
+            bool started = false;
+            append_unit(result, started, val_y, "y");
+            append_unit(result, started, val_d, "d");
+            append_unit(result, started, val_h, "h");
+            append_unit(result, started, val_m, "m");
+            append_unit(result, started, val_s, "s");
+            append_unit(result, started, val_ms, "ms");
         }
 
         std::string fmt = std::string("{:" + std::string(spec_buf, spec_len) + "}");
         return std::vformat_to(ctx.out(), fmt, std::make_format_args(result));
     }
-
-   private:
-    char spec_buf[32]{};
-    size_t spec_len{0};
 };
