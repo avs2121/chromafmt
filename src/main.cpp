@@ -1,6 +1,9 @@
 #include <iostream>
 
+#include "color.hpp"
 #include "color_formatter.hpp"
+#include "duration.hpp"
+#include "duration_formatter.hpp"
 
 /*
 Input to handle :
@@ -23,5 +26,8 @@ int main()
     std::cout << std::format("lower case hex color {:h}\n", c1);     // lower case hex
     std::cout << std::format("upper case hex color {:H}\n", c1);     // upper case hex
     std::cout << std::format("specifier last color {:>20H}\n", c1);  // type specifier in last position
-    std::cout << std::format("fill width color: {:*^20}\n", c1);     // fill width 20 with *
+    std::cout << std::format("fill width color {:*^20}\n", c1);      // fill width 20 with *
+
+    Duration d(1523);
+    std::cout << std::format("Duration {}\n", d);
 }
