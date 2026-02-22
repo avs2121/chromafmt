@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <format>
+#include <iostream>
 
 #include "duration.hpp"
 
@@ -70,7 +71,7 @@ struct std::formatter<Duration>
         if (ranged_end != it)
         {
             auto last = ranged_end - 1;
-            if (*last == 's' && *(last - 1) == 'm')
+            if (ranged_end - it >= 2 && *last == 's' && *(last - 1) == 'm')  // make sure not to get UB by getting diff.
             {
                 isMs = true;
                 ranged_end = last - 1;
