@@ -2,7 +2,6 @@
 
 #include <cstring>
 #include <format>
-#include <iostream>
 
 #include "duration.hpp"
 
